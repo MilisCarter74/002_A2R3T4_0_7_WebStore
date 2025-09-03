@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>cart</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='cart.css') }}">
+    <script>
+        function updateQuantity(productId, input) {
+            productId = Number(productId);
+            let quantity = Number(input.value);
+            if (quantity < 1) {
+                alert("amount cant be less than 1");
+                input.value = 1;
+                quantity = 1;
+            }
+            fetch("/update_basket", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId, quantity: quantity, action: "update" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    alert(data.error);
+                    location.reload();
+                } else {
+                    location.reload();
+                }
+            });
+        }
+
+        function removeItem(productId) {
+            productId = Number(productId);
+            if (!confirm("delete product from the basket?")) return;
+            fetch("/update_basket", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: productId, action: "remove" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Your cart | user key: {{ user_key }}</h1>
+    <button onclick="location.href='{{ url_for('shop', user_key=user_key) }}'" style="margin-bottom: 20px; padding: 8px 12px;">back to store</button>
+    {% if basket %}
+        <div class="basket-list">
+            {% for item in basket %}
+                <div class="basket-item">
+                    <img src="{{ url_for('static', filename=item.photo) }}" alt="{{ item.description }}">
+                    <div class="details">
+                        <p>{{ item.description }}</p>
+                        <p><strong>{{ item.price }} $</strong></p>
+                        <p>Доступно: {{ item.amount }}</p>
+                        <p>
+                            Кількість:
+                            <input type="number" min="1" max="{{ item.amount }}" value="{{ item.quantity }}" onchange="updateQuantity('{{ item.id }}', this)">
+                        </p>
+                        <button onclick="removeItem('{{ item.id }}')" class="remove-btn">Видалити</button>
+                    </div>
+                </div>
+            {% endfor %}
+            <h3>Total: {{ "%.2f"|format(total) }} $</h3>
+        </div>
+    {% else %}
+        <p>The cart is empty.</p>
+    {% endif %}
+</body>
+</html>

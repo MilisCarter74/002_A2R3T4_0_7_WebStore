@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>shop</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='shop.css') }}">
+    <script>
+        function addToBasket(id, amount) {
+            id = Number(id);
+            amount = Number(amount);
+            const input = document.getElementById("qty-" + id);
+            let quantity = Number(input.value);
+
+            if (!quantity || quantity < 1) {
+                alert("incorrect amount");
+                return;
+            }
+            if (quantity > amount) {
+                alert("amount is bigger than is available in stock");
+                return;
+            }
+
+            fetch("/add_to_basket", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product_id: id, quantity: quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.success ? "added in basket" : "out of stock or not enough product");
+                location.reload();
+            });
+        }
+    </script>
+</head>
+<body>
+    <button class="cart-button" onclick="location.href='{{ url_for('cart', user_key=user_key) }}'">
+        cart
+    </button>
+
+    <div class="grid">
+        {% for p in products %}
+        <div class="product">
+            <img src="{{ url_for('static', filename=p.photo) }}" alt="{{ p.description }}">
+            <p>{{ p.description }}</p>
+            <p><strong>{{ p.price }} $</strong></p>
+            <p class="{{ 'available' if p.amount > 0 else 'unavailable' }}">
+                {{ 'in stock' if p.amount > 0 else 'out of stock' }}
+            </p>
+            {% if p.amount > 0 %}
+            <div class="basket-controls">
+                <input type="number" id="qty-{{ p.id }}" min="1" max="{{ p.amount }}" value="1">
+                <button onclick="addToBasket('{{ p.id }}', '{{ p.amount }}')">add to basket</button>
+            </div>
+            {% else %}
+            <div class="basket-controls">
+                <input type="number" value="0" disabled>
+                <button disabled>no</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
